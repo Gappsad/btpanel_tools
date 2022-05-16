@@ -52,8 +52,6 @@ cleaning_garbage(){
     rm -rf /tmp/*.sh
     rm -rf /tmp/*.log
     rm -f ${panel_path}/data/auth_list.json
-    rm -f ${panel_path}/data/plugin.json
-    rm -f ${panel_path}/data/plugin_bin.pl
     rm -rf ${panel_path}/data/check_domain/*.pl
     echo -e "正在清理PHP_SESSION......"
     rm -rf /tmp/sess_*
