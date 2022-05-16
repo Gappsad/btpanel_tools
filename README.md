@@ -16,7 +16,7 @@ TG交流群：t.me/btfans
 ```shell-session
 wget -O btpanel_tools.sh https://gitee.com/gacjie/btpanel_tools/raw/master/btpanel_tools.sh && bash btpanel_tools.sh
 ``` 
-致歉：由于220401版本，gitee上少上传了2个文件，导致破解版用户修复面板回免费版会导致环境损坏错误，在此对受到影响的用户致歉。    
+由于220401版本，gitee上少上传了2个文件，导致破解版用户修复面板回免费版会导致环境损坏错误，在此对受到影响的用户致歉。    
 解决办法：    
 wget -O /www/server/panel/pyenv/lib/python3.7/urllib/request.py https://gitee.com/gacjie/btpanel_tools/raw/master/request.py -T 10     
 wget -O /www/server/panel/pyenv/lib/python3.7/site-packages/requests/api.py https://gitee.com/gacjie/btpanel_tools/raw/master/api.py -T 10      
