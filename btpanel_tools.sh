@@ -3,12 +3,14 @@
 download_url=https://gitee.com/gacjie/btpanel_tools/raw/master
 panel_path=/www/server/panel
 btdown_url=http://download.bt.cn
-tools_version='220401'
+tools_version='220516'
 #检查是否安装面板
 if [ ! -f "/etc/init.d/bt" ] || [ ! -d "/www/server/panel" ]; then
 	echo -e "此服务器没有安装宝塔！"
 	exit;
 fi
+p_version=$(cat ${panel_path}/class/common.py|grep "version = "|awk '{print $3}'|tr -cd [0-9.])
+btpanel_version=${p_version:0:5}
 #获取包管理器
 if [ -f "/usr/bin/yum" ] && [ -f "/etc/yum.conf" ]; then
 	PM="yum"
@@ -33,27 +35,6 @@ new_version(){
     echo -e "还没有发布新版本"
     back_home
 }
-#获取宝塔版本
-auth_version(){
-    auth_version='官方正版'
-    crackurl="0"
-	CRACK_URL=(oss.yuewux.com download.btpanel.net 182.61.16.58 hostcli.com fenhao.me seele.wang moetas.com 05bt.com);
-	for url in ${CRACK_URL[@]};
-	do 	
-	    FIIE_PATH=(/etc/init.d/bt ${panel_path}/tools.py ${panel_path}/class/panelPlugin.py ${panel_path}/pyenv/lib/python3.7/site-packages/requests/api.py ${panel_path}/pyenv/lib/python3.7/urllib/request.py);
-    	for path in ${FIIE_PATH[@]};
-    	do
-    		CRACK_INIT=$(cat ${path} |grep ${url})
-    		if [ "${CRACK_INIT}" ];then
-    			auth_version='破解版本'
-    			crackurl=${url}
-    		fi
-    	done
-	done
-	p_version=$(cat ${panel_path}/class/common.py|grep "version = "|awk '{print $3}'|tr -cd [0-9.])
-	btpanel_version=${p_version:0:5}
-}
-auth_version
 #清理垃圾
 cleaning_garbage(){
     echo -e "正在清理官方版残留文件......"
@@ -114,15 +95,6 @@ cleaning_garbage(){
 }
 #面板优化
 panel_optimization(){
-    if [[ "${btpanel_version}" == "7.7.0" ]]; then
-        echo -e "正在去除计算验证......"
-        Layout_file="/www/server/panel/BTPanel/templates/default/layout.html";
-        JS_file="/www/server/panel/BTPanel/static/bt.js";
-        if [ `grep -c "<script src=\"/static/bt.js\"></script>" $Layout_file` -eq '0' ];then 
-            sed -i '/{% block scripts %} {% endblock %}/a <script src="/static/bt.js"></script>' $Layout_file; 
-        fi;
-        wget ${download_url}/bt.js -O $JS_file;
-    fi;
     echo -e "正在去除创建网站自动创建的默认文件......"
     sed -i "/htaccess = self.sitePath+'\/.htaccess'/, /public.ExecShell('chown -R www:www ' + htaccess)/d" ${panel_path}/class/panelSite.py
     sed -i "/index = self.sitePath+'\/index.html'/, /public.ExecShell('chown -R www:www ' + index)/d" ${panel_path}/class/panelSite.py
@@ -148,10 +120,36 @@ panel_optimization(){
     	echo "True" > ${panel_path}/data/not_workorder.pl
     fi
     echo -e "正在关闭首页软件推荐与广告......"
-    sed -i "/return config/, /return /d" ${panel_path}/BTPanel/static/js/public.js
+    sed -i '/def get_pay_type(self,get):/a \ \ \ \ \ \ \ \ return [];' ${panel_path}/class/ajax.py
     echo -e "正在关闭宝塔拉黑检测与提示......"
     sed -i '/self._check_url/d' ${panel_path}/class/panelPlugin.py
-    bt restart
+    echo -e "正在关闭面板日志与绑定域名上报."
+    sed -i "/^logs_analysis()/d" ${panel_path}/script/site_task.py
+    sed -i "s/run_thread(cloud_check_domain,(domain,))/return/" ${panel_path}/class/public.py
+    echo -e "正在关闭自动强制面板升级更新."
+    sed -i "/#是否执行升级程序/a \ \ \ \ \ \ \ \ \ \ \ \ updateInfo[\'force\'] = False;" ${panel_path}/class/ajax.py
+    rm -f ${panel_path}/data/autoUpdate.pl
+    read -p "是否需要去除计算验证（y：确认/n：取消）:" function
+	if [ "${function}" == "y" ]; then
+        echo -e "正在去除计算验证......"
+        Layout_file="/www/server/panel/BTPanel/templates/default/layout.html";
+        JS_file="/www/server/panel/BTPanel/static/bt.js";
+        if [[ "${btpanel_version}" == "7.7.0" ]]; then
+            if [ `grep -c "<script src=\"/static/bt.js\"></script>" $Layout_file` -eq '0' ];then 
+                sed -i '/{% block scripts %} {% endblock %}/a <script src="/static/bt.js"></script>' $Layout_file; 
+            fi;
+            wget ${download_url}/bt.js -O $JS_file;
+        fi;
+        if [[ "${btpanel_version}" == "7.9.0" ]]; then
+            if [ `grep -c "<script src=\"/static/bt.js\"></script>" $Layout_file` -eq '0' ];then
+            	sed -i '/<\/body>/i <script src="/static/bt.js"></script>' $Layout_file;
+            fi;
+            wget ${download_url}/bt_new.js -O $JS_file;
+        fi;
+	fi
+    /etc/init.d/bt restart
+    echo -e "在面板首页“修复面板”即可恢复原样"
+    back_home
 }
 #漏洞修复
 bug_fix(){
@@ -466,13 +464,6 @@ open_offline(){
         chattr -i /etc/hosts
         sed -i "/bt.cn/d" /etc/hosts
         echo '192.168.88.188 bt.cn www.bt.cn api.bt.cn download.bt.cn dg2.bt.cn dg1.bt.cn' >>/etc/hosts
-        if [[ "${crackurl}" != "0" ]]; then
-            sed -i "/${crackurl}/d" /etc/hosts
-            echo "192.168.88.188 www.${crackurl} api.${crackurl} download.${crackurl}" >>/etc/hosts
-    	fi
-        if [[ "${crackurl}" != "hostcli.com" ]]; then
-            echo "192.168.88.188 v7.hostcli.com" >>/etc/hosts
-    	fi
 	fi
     back_home
 }
@@ -483,9 +474,6 @@ close_offline(){
     \cp -rf ${panel_path}/config/hosts.json.bk  ${panel_path}/config/hosts.json
     chattr -i /etc/hosts
     sed -i "/bt.cn/d" /etc/hosts
-    if [[ "${crackurl}" != "0" ]]; then
-        sed -i "/${crackurl}/d" /etc/hosts
-	fi
     back_home
 }
 #快捷启动
@@ -546,7 +534,7 @@ main(){
 #  脚本官网：www.btpanel.cm  宝塔教程：www.baota.me  #
 #  QQ交流群：365208828       TG交流群：t.me/btfans   #
 #----------------------------------------------------#
-#  授权版本:${auth_version}      面板版本:${btpanel_version}             #
+#  面板版本:${btpanel_version}                                    #
 #--------------------[面板工具]----------------------#
 # (1)[垃圾清理]清理系统、面板、网站产生的缓存日志等  #
 # (2)[面板优化]优化面板、去除广告、计算题与延时等    #
