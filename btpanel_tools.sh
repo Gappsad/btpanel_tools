@@ -396,7 +396,7 @@ degrade_btpanel(){
     	echo "5.9平滑升级到6.0的命令：curl http://download.bt.cn/install/update_to_6.sh|bash"
     	exit 0;
     fi
-    wget -T 5 -O panel.zip http://download.bt.cn/install/update/LinuxPanel-${version}.zip
+    wget -T 5 -O panel.zip https://raw.githubusercontent.com/gacjie/btpanel_tools/main/update/LinuxPanel-${version}.zip
     unzip -o panel.zip -d /www/server/ > /dev/null
     rm -f panel.zip
     rm -f ${panel_path}/*.pyc
