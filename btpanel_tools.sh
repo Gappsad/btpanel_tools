@@ -127,6 +127,8 @@ panel_optimization(){
     echo -e "正在关闭自动强制面板升级更新."
     sed -i "/#是否执行升级程序/a \ \ \ \ \ \ \ \ \ \ \ \ updateInfo[\'force\'] = False;" ${panel_path}/class/ajax.py
     rm -f ${panel_path}/data/autoUpdate.pl
+    echo -e "关闭自动更新软件列表."
+    sed -i 's/plugin_timeout = 86400/plugin_timeout = 0/g' ${panel_path}/class/public.py
     read -p "是否需要去除计算验证（y：确认/n：取消）:" function
 	if [ "${function}" == "y" ]; then
         echo -e "正在去除计算验证......"
@@ -455,6 +457,7 @@ update_wafrule(){
 open_offline(){
     read -p "请在执行前更新下软件商店，确保软件列表缓存文件存在。（y：确认/n：取消）:" function
 	if [ "${function}" == "y" ]; then
+        sed -i 's/plugin_timeout = 86400/plugin_timeout = 0/g' ${panel_path}/class/public.py
         rm -f ${panel_path}/data/home_host.pl
         echo 'True' >${panel_path}/data/not_network.pl
         \cp -rf ${panel_path}/config/hosts.json  ${panel_path}/config/hosts.json.bk
